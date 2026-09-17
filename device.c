@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#define ERROR_NONE 0
+#define ERROR_OVERHEAT (1 << 0)
+#define ERROR_LOW_VOLTAGE (1 << 1)
+#define ERROR_HIGH_VOLTAGE (1 << 2)
+
+
 void device_init(Device *device){
     if (device == NULL){
         return;
@@ -88,35 +94,34 @@ bool generate_random_params(Device *device){
     return true;
 }
 void update_errors(Device *device){
-    device->error = ERROR_NONE;
+    device->errors = ERROR_NONE;
 
     if(device->temperature > 70.0f){
-        device->error =ERROR_OVERHEAT;
+        device->errors |= ERROR_OVERHEAT;
     }
     if(device->voltage < 2.0f){
-        device->error =ERROR_LOW_VOLTAGE;
+        device->errors |= ERROR_LOW_VOLTAGE;
     }
     if(device->voltage > 4.8f){
-        device->error =ERROR_HIGH_VOLTAGE;
+        device->errors |= ERROR_HIGH_VOLTAGE;
     }
 
 }
 
 void show_errors(Device *device){
-    switch(device->error){
-        case ERROR_NONE:
-            printf("No errors.\n");
-            break;
-        case ERROR_OVERHEAT:
-            printf("Device is overheating.\n");
-            break;
-        case ERROR_LOW_VOLTAGE:
-            printf("The voltage is too low.\n");
-            break;
-        case ERROR_HIGH_VOLTAGE:
-            printf("The voltage is too high.\n");
-            break;
+    if(device->errors == ERROR_NONE){
+        printf("No errors.\n");
     }
+    if(device->errors & ERROR_OVERHEAT){
+        printf("[ERROR] Device is overheating.\n");
+    }
+    if(device->errors & ERROR_LOW_VOLTAGE){
+        printf("[ERROR] Voltage is too low.\n");
+    }
+    if(device->errors & ERROR_HIGH_VOLTAGE){
+        printf("[ERROR] Voltage is too high.\n");
+    }
+    
 }
 void update_status(Device *device){
     if(device->temperature > 70.0f || device->voltage < 1.8f || device->voltage > 4.8f){
@@ -127,6 +132,7 @@ void update_status(Device *device){
         device->status = DEVICE_OK;
     } 
 }
+
 float random_params_change(float min,float max){
     float r = (float)rand() /(float)RAND_MAX;
 
@@ -139,17 +145,27 @@ void simulating_changes_in_params(Device *device){
     float min_change_temp = -0.2f;
     float max_change_temp = 0.4f;
     float temp_change = random_params_change(min_change_temp,max_change_temp);
-    device->temperature += temp_change;
+    if((device->temperature + temp_change) > 80.0f ||(device->temperature + temp_change)< -20.0f){
+        return;
+    }
+    else{
+        device->temperature += temp_change;
+    }
 
     float min_change_voltage = -0.1f;
     float max_change_voltage= 0.2f;
     float voltage_change = random_params_change(min_change_voltage,max_change_voltage);
-    device->voltage += voltage_change;
+    if((device->voltage + voltage_change ) > 5.0f ||(device->voltage + voltage_change )< 1.8f){
+        return;
+    }
+    else{
+        device->voltage += voltage_change;
+    }
+    
 
 
 
 }
-
 void device_tick(Device *device){
     
     if(device == NULL){
@@ -160,5 +176,11 @@ void device_tick(Device *device){
     update_status(device);
 
 }
+// wystepowanie wielu bledow jednoczesnie np
 
+// 000
+// │││
+// ││└── overheat
+// │└─── low voltage
+// └──── high voltage
 

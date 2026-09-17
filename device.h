@@ -1,13 +1,6 @@
 #pragma once
 #include <stdbool.h>
 
-
-typedef enum {
-    ERROR_NONE,
-    ERROR_OVERHEAT,
-    ERROR_LOW_VOLTAGE,
-    ERROR_HIGH_VOLTAGE
-} DeviceError;
 typedef enum {
     DEVICE_OK,
     DEVICE_WARNING,
@@ -18,7 +11,7 @@ typedef struct {
     float voltage;
     int led_on;
     int motor_on;
-    DeviceError error;
+    unsigned int errors;
     DeviceStatus status;
 } Device;
 
