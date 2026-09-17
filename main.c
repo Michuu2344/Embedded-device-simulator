@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "device.h"
-
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 int show_menu(void){
     int choice;
     printf("========================\n");
@@ -24,35 +26,50 @@ int show_menu(void){
         
     }
    return choice;
-
-    // trzeba wymyslic co robic gdy choice nie jest liczba
 }
-
 int main(){
-    
+    srand(time(NULL));
     Device device;
+    
     int running = true;
     float temperature;
     device_init(&device);
+    if(generate_random_params(&device)){
+        printf("Parameters generated succesfully!\n");
+    }
+    else{
+        printf("Failed to generate parameters\n");
+    }
     int user_choice = 0;
     while(running){
+        device_tick(&device);
+        sleep(3);
         user_choice = show_menu();
         switch (user_choice)
     {
     case 1:
+        update_status(&device);
         show_status(&device);
+
         break;
     
     case 2:
         printf("Set the temperature: ");
-        scanf("%f",&temperature);
+        if(scanf("%f",&temperature) != 1){
+            printf("You have to type a float number");
+            int c;
+            while((c = getchar()) != '\n' && c !=EOF);
+            break;
+        };
         set_temperature(&device,temperature);
         break;
     case 3:
         toggle_led(&device);
         break;
     case 4:
-    printf("");
+        update_errors(&device);
+        show_errors(&device);
+
         break;
     case 5:
         printf("Device is turning off\n");
@@ -67,10 +84,3 @@ int main(){
 
    
 }
-
-// make the params random
-    // bit manipulation
-    // uart
-
-     //debugging
-    //big picture     
