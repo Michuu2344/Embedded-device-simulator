@@ -140,8 +140,6 @@ float random_params_change(float min,float max){
     return change;
 }
 void simulating_changes_in_params(Device *device){
-    
-
     float min_change_temp = -0.2f;
     float max_change_temp = 0.4f;
     float temp_change = random_params_change(min_change_temp,max_change_temp);

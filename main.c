@@ -5,6 +5,12 @@
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
+
+
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static bool thread_running = true;
 int show_menu(void){
     int choice;
     printf("========================\n");
@@ -28,16 +34,29 @@ int show_menu(void){
     }
    return choice;
 }
+
 void *device_thread(void *arg){
+
     Device *device = (Device *)arg;
 
     while(1){
         sleep(1);
+        pthread_mutex_lock(&mutex);
+        if(!thread_running){
+            pthread_mutex_unlock(&mutex);
+            break;
+        }
         device_tick(device);
+        pthread_mutex_unlock(&mutex);
     }
     return NULL;
+    
 }
+
+
 int main(){
+    
+    
     srand(time(NULL));
     Device device;
     
@@ -50,21 +69,22 @@ int main(){
     else{
         printf("Failed to generate parameters\n");
     }
-    pthread_t thread;
+    pthread_t tid;
 
-    if(pthread_create(&thread,NULL,device_thread,&device) != 0 ){
-        printf("Failed to create device thread\n");
-        return 1;
-    }
+    pthread_create(&tid,NULL,device_thread,&device);
+
+
     int user_choice = 0;
     while(running){
         user_choice = show_menu();
         switch (user_choice)
     {
     case 1:
+        pthread_mutex_lock(&mutex);
+
         update_status(&device);
         show_status(&device);
-
+        pthread_mutex_unlock(&mutex);
         break;
     
     case 2:
@@ -75,15 +95,20 @@ int main(){
             while((c = getchar()) != '\n' && c !=EOF);
             break;
         };
+        pthread_mutex_lock(&mutex);
         set_temperature(&device,temperature);
+        pthread_mutex_unlock(&mutex);
         break;
     case 3:
+        pthread_mutex_lock(&mutex);
         toggle_led(&device);
+        pthread_mutex_lock(&mutex);
         break;
     case 4:
+        pthread_mutex_lock(&mutex);
         update_errors(&device);
         show_errors(&device);
-
+        pthread_mutex_lock(&mutex);
         break;
     case 5:
         printf("Device is turning off\n");
@@ -94,7 +119,16 @@ int main(){
         break;
     }
     }
+    pthread_mutex_lock(&mutex);
+    thread_running = false;
+    pthread_mutex_unlock(&mutex);
+    pthread_join(tid,NULL);
     return 0;
 
    
 }
+// musimy zrobic tak zeby dwie funkcje nie probowaly zmienic jednej rzeczy w tym samym czasie
+// 1.ustawiamy lock
+// 2. definijemy watki
+// 3. blokujemy watek jesli funkcja ma edytowac cos
+// 4. po wykonaniu sie funkcji musimy odblokowac watek
