@@ -71,7 +71,10 @@ int main(){
     }
     pthread_t tid;
 
-    pthread_create(&tid,NULL,device_thread,&device);
+    if(pthread_create(&tid,NULL,device_thread,&device) != 0){ // jesli to nie jest zerem to nie utworzylismy watku
+        printf("Failed to create device thread");
+        return 1;
+    }
 
 
     int user_choice = 0;
@@ -95,20 +98,20 @@ int main(){
             while((c = getchar()) != '\n' && c !=EOF);
             break;
         };
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(&mutex); // blokujemy watek aby nie doszlo do kolizji w ktorej dwie funkcje chca zmienic ta sama zmienna
         set_temperature(&device,temperature);
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex); // odblokowujemy
         break;
     case 3:
         pthread_mutex_lock(&mutex);
         toggle_led(&device);
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_unlock(&mutex);
         break;
     case 4:
         pthread_mutex_lock(&mutex);
         update_errors(&device);
         show_errors(&device);
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_unlock(&mutex);
         break;
     case 5:
         printf("Device is turning off\n");
@@ -119,10 +122,11 @@ int main(){
         break;
     }
     }
-    pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&mutex); 
     thread_running = false;
     pthread_mutex_unlock(&mutex);
     pthread_join(tid,NULL);
+    pthread_mutex_destroy(&mutex);
     return 0;
 
    
@@ -132,3 +136,4 @@ int main(){
 // 2. definijemy watki
 // 3. blokujemy watek jesli funkcja ma edytowac cos
 // 4. po wykonaniu sie funkcji musimy odblokowac watek
+
